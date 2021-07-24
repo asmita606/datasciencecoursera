@@ -56,3 +56,4 @@ tidydata<-data %>% group_by(`activity names`,Subjects) %>% summarise_if(is.numer
 write.table(tidydata,file="tidydata.txt",row.names = FALSE)
 
 
+
