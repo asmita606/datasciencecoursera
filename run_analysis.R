@@ -53,5 +53,6 @@ data<-data[,-which(colnames(data)=="labels")] ## getting rid of additional colum
 # tidy data set with the average of each variable for each activity and each subject
 tidydata<-data %>% group_by(`activity names`,Subjects) %>% summarise_if(is.numeric, mean, na.rm = TRUE)
 
-write.table(tidydata,file="tidy data set.txt",row.names = FALSE)
+write.table(tidydata,file="tidydata.txt",row.names = FALSE)
+
 
