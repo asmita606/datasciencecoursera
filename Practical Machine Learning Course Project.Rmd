@@ -1,0 +1,130 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "Asmita Ghoshal"
+date: "29 November 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Executive Summary
+
+One thing that people regularly do is quantify how  much of a particular activity they do, but they rarely quantify how well they do it. In this project, we will be able to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. This is the "classe" variable in the training set. Predictive models that are built using the training set are Decision Trees and Random Forest using a 5-fold cross validation on the training set.
+
+
+## Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, our goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+Required Packages 
+
+```{r,message=FALSE,warning=FALSE}
+library(ggplot2)
+library(caret)
+```
+
+
+## Data Cleaning and Exploratory Data Analysis
+
+Reading the training and test data sets
+
+```{r}
+train<-read.csv("pml-training.csv")
+test<-read.csv("pml-testing.csv")
+dim(train)
+dim(test)
+```
+
+Getting rid of the redundant columns. Finding NA columns in the train and test data sets. Selecting only the valid columns from the training data for subsquent model building.
+
+```{r}
+test<-test[,-(1:7)] ## getting rid of redundant columns
+nacols<-unname(apply(test,2,function(x){sum(is.na(x))}))
+test<-test[,which(nacols==0)]
+
+
+nacols<-unname(apply(train,2,function(x){sum(is.na(x))}))
+train<-train[,which(nacols==0)] 
+columns<-c("classe",names(test)[!names(test) %in% c("problem_id")])
+train<-train[,columns]
+```
+
+
+Bar chart of the response variable "classe" is presented below. 
+
+```{r}
+qplot(classe,data=train,main="Bar chart of Classe")+geom_bar(fill="navyblue")+
+        theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+## Decision Tree
+
+Setting up the validation set
+
+```{r}
+train_idx<- createDataPartition(y=train$classe, p=0.7, list=F)
+insample<-train[train_idx,]
+validation<-train[-train_idx,]
+```
+
+
+Setting up the control for the 5 fold cross validation.
+
+```{r}
+control <- trainControl(method="cv", number=5, verboseIter=F)
+```
+
+
+Fitting a Decicision Tree on the insample dataset.
+
+```{r}
+fit_DT<-train(classe~., data=insample, method="rpart", trControl = control, tuneLength = 5)
+```
+
+Confusion Matrix corresponding to the validation set using the Decision Tree model.
+
+```{r}
+pred<-predict(fit_DT, validation)
+ConfMat_DT<- confusionMatrix(pred, factor(validation$classe))
+ConfMat_DT
+```
+
+## Random Forest
+
+
+
+Fitting a Random Forest and reporting the corresponding Confusion Matrix below.
+
+```{r}
+fit_RF<-train(classe~., data=insample, method="rf", trControl = control, tuneLength=5)
+pred<-predict(fit_RF, validation)
+ConfMat_RF<- confusionMatrix(pred, factor(validation$classe))
+ConfMat_RF
+```
+
+## Conclusion
+
+Accuracy on the validation set corresponding to the Decision Tree Model is 
+```{r}
+ConfMat_DT$overall[1]
+```
+
+and accuracy on the validation set corresponding to the Random Forest Model is
+```{r}
+ConfMat_RF$overall[1]
+```
+
+Based on accuracy on the validation set a Random Forest Model is deemed to be appropriate for predictiong the test cases.
+
+Prediction on Test Data is presented Below.
+```{r}
+pred_test<-predict(fit_RF,newdata=test)
+pred_test
+```
+
